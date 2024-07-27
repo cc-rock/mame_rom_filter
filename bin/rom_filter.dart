@@ -112,7 +112,6 @@ void main(List<String> arguments) async {
           header = element;
           return;
         }
-        print('Machine found ${element.getAttribute('name')}');
         if (romNames.contains(element.getAttribute('name'))) {
           romsFound.add(element);
         }
@@ -147,6 +146,16 @@ void main(List<String> arguments) async {
 
     await outputStream.flush();
     await outputStream.close();
+
+    if (verbose) {
+      final notFoundRoms = {...romNames};
+      for (final rom in romsFound) {
+        notFoundRoms.remove(rom.getAttribute('name'));
+      }
+      for (final romName in notFoundRoms) {
+        print('Not found: $romName');
+      }
+    }
   } on FormatException catch (e) {
     // Print usage information if an invalid argument was provided.
     print(e.message);
