@@ -24,8 +24,14 @@ ArgParser buildParser() {
     ..addOption(
       'romlist',
       abbr: 'r',
-      mandatory: true,
+      mandatory: false,
       help: 'A text file with all rom names to include, one per line.',
+    )
+    ..addOption(
+      'romdir',
+      abbr: 'd',
+      mandatory: false,
+      help: 'A directory with the zip files of the roms to include',
     )
     ..addOption(
       'input',
@@ -62,10 +68,45 @@ void main(List<String> arguments) async {
     }
 
     final romListFileName = results.option('romlist') ?? '';
+    final romsDirName = results.option('romdir') ?? '';
     final inputFileName = results.option('input') ?? '';
     final outputFileName = results.option('output') ?? '';
 
-    final romNames = File(romListFileName).readAsLinesSync();
+    if (romsDirName.isEmpty && romListFileName.isEmpty) {
+      print('ERROR: Either romdir or romfile must be specified\n');
+      printUsage(argParser);
+      return;
+    }
+
+    if (inputFileName.isEmpty) {
+      print('ERROR: No input file specified\n');
+      printUsage(argParser);
+      return;
+    }
+
+    if (outputFileName.isEmpty) {
+      print('ERROR: No output file specified\n');
+      printUsage(argParser);
+      return;
+    }
+
+    late final List<String> romNames;
+    if (romListFileName.isNotEmpty) {
+      romNames = File(romListFileName).readAsLinesSync();
+    } else {
+      final children = Directory(romsDirName).listSync();
+      romNames = children.where((it) => it is File && it.path.toLowerCase().endsWith('.zip')).map(
+        (it) {
+          final filename = it.path.split('\\').last;
+          return filename.substring(0, filename.length - 4);
+        },
+      ).toList();
+    }
+
+    if (verbose) {
+      print("Looking for ${romNames.length} roms.");
+    }
+
     final inputStream = File(inputFileName).openRead();
 
     if (verbose) {
